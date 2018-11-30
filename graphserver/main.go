@@ -1,25 +1,29 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"flag"
 	"path"
+
+	graphjson "github.com/neosimsim/graphapi/json"
 )
 
 var repo *FileRepo
 
 func main() {
 	httpListen := flag.String("http", ":8080", "address for incoming connections")
-	dir := flag.String("dir",  ".", "directory to store to and read from")
+	dir := flag.String("dir", ".", "directory to store to and read from")
 	flag.Parse()
 
 	repo = NewFileRepo(path.Join(*dir, "elements"))
 	http.HandleFunc("/elements/", ServeFileFactory(repo))
 	linkRepo := NewFileRepo(path.Join(*dir, "links"))
 	http.HandleFunc("/links/", ServeFileFactory(linkRepo))
+	http.HandleFunc("/typeinfo/", TypeInfoFactory(*dir))
 	http.Handle("/assets/", http.StripPrefix("/assets", NewCorsHandler(http.FileServer(http.Dir("assets")))))
 
 	log.Fatal(http.ListenAndServe(*httpListen, nil))
@@ -45,6 +49,30 @@ func ServeFileFactory(repo Repo) http.HandlerFunc {
 		case "DELETE":
 			log.Print("DELETE")
 			DeleteElements(repo, w, req)
+		}
+	}
+}
+
+func TypeInfoFactory(basedir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		typeName := path.Base(req.URL.Path)
+		if typeName == "typeinfo" {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("type name required"))
+		} else {
+			if f, err := os.Open(path.Join(basedir, "schemas", typeName)); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			} else if info, err := graphjson.ReadPropertyInfo(f); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+			} else {
+				jsonEncoder := json.NewEncoder(w)
+				if err := jsonEncoder.Encode(info); err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					w.Write([]byte(err.Error()))
+				}
+			}
 		}
 	}
 }
