@@ -40,7 +40,7 @@ func ReadPropertyInfo(schemaReader io.Reader) (map[string]PropertyInfo, error) {
 				return nil, err
 			} else {
 				switch propertyName {
-				case "$veo.id", "$veo.type", "$veo.title":
+				case "id", "type", "title":
 					info.Visible = false
 					info.Editable = false
 				}
@@ -106,13 +106,13 @@ const meta = `
         {
           "description": "Each schema needs a set of properties. For a property schema to be valid it has to be one of the predefined property schema, i.e type, id, title or an arbitrary pattern property describing a valid type, e.g. boolean, dateTime etc. Note that this object is a schema describing the property named 'properties'",
           "properties": {
-            "$veo.type": {
+            "type": {
               "$ref": "http://verinice.com/veo/draft-01/definitions.json#/predefined"
             },
-            "$veo.title": {
+            "title": {
               "$ref": "http://verinice.com/veo/draft-01/definitions.json#/string"
             },
-            "$veo.id": {
+            "id": {
               "$ref": "http://verinice.com/veo/draft-01/definitions.json#/string"
             }
           },
@@ -149,9 +149,9 @@ const meta = `
           },
           "additionalProperties": false,
           "required": [
-            "$veo.type",
-            "$veo.id",
-            "$veo.title"
+            "type",
+            "id",
+            "title"
           ]
         }
   },

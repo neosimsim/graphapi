@@ -9,32 +9,32 @@ func TestReadPropertyInfo(t *testing.T) {
 	if info, err := ReadPropertyInfo(strings.NewReader(order)); err != nil {
 		t.Fatal(err)
 	} else {
-		if info["$veo.id"].Type != "string" {
-			t.Errorf("expected '$veo.id' to be a string: %s", info["$veo.id"].Type)
+		if info["id"].Type != "string" {
+			t.Errorf("expected 'id' to be a string: %s", info["id"].Type)
 		}
-		if info["$veo.id"].Editable {
-			t.Error("expected '$veo.id' not to be editable")
+		if info["id"].Editable {
+			t.Error("expected 'id' not to be editable")
 		}
-		if info["$veo.id"].Visible {
-			t.Error("expected '$veo.id' not to be visible")
+		if info["id"].Visible {
+			t.Error("expected 'id' not to be visible")
 		}
-		if info["$veo.type"].Type != "predefined" {
-			t.Errorf("expected '$veo.type' to be apredefined: %s", info["$veo.type"].Type)
+		if info["type"].Type != "predefined" {
+			t.Errorf("expected 'type' to be apredefined: %s", info["type"].Type)
 		}
-		if info["$veo.type"].Editable {
-			t.Error("expected '$veo.type' not to be editable")
+		if info["type"].Editable {
+			t.Error("expected 'type' not to be editable")
 		}
-		if info["$veo.type"].Visible {
-			t.Error("expected '$veo.type' not to be visible")
+		if info["type"].Visible {
+			t.Error("expected 'type' not to be visible")
 		}
-		if info["$veo.title"].Type != "string" {
-			t.Errorf("expected '$veo.title' to be apredefined: %s", info["$veo.title"].Type)
+		if info["title"].Type != "string" {
+			t.Errorf("expected 'title' to be apredefined: %s", info["title"].Type)
 		}
-		if info["$veo.title"].Editable {
-			t.Error("expected '$veo.title' not to be editable")
+		if info["title"].Editable {
+			t.Error("expected 'title' not to be editable")
 		}
-		if info["$veo.title"].Visible {
-			t.Error("expected '$veo.title' not to be visible")
+		if info["title"].Visible {
+			t.Error("expected 'title' not to be visible")
 		}
 		if info["itemName"].Type != "string" {
 			t.Errorf("expected 'itemName' to be a string: %s", info["itemName"].Type)
@@ -68,11 +68,11 @@ const order = `
   "title": "Order-Schema",
   "description": "A sample schema to display all possibilities of the meta schema.",
   "properties": {
-    "$veo.id": {
+    "id": {
       "type": "string",
       "title": "The UUID to identify the element"
     },
-    "$veo.type": {
+    "type": {
       "type": "string",
       "title": "Type name",
       "description": "The name of the type described by this schema",
@@ -80,7 +80,7 @@ const order = `
         "order"
       ]
     },
-    "$veo.title": {
+    "title": {
       "type": "string",
       "title": "An Order"
     },
