@@ -1,0 +1,48 @@
+package require Tk
+package require json
+package require json::write
+
+set input [open "|curl localhost:7070/typeinfo/order"]
+set text [read $input]
+
+set d [json::json2dict $text]
+
+wm title . "Formular"
+grid [ttk::frame .c -padding "3 3 12 12"] -column 0 -row 0 -sticky nwes
+grid columnconfigure . 0 -weight 1; grid rowconfigure . 0 -weight 1
+
+grid [ttk::frame .c.form] -column 0 -row 0 -sticky nswe
+
+grid [ttk::button .c.calc -text "Print" -command {set x [dictFromFormKeys [dict keys $d]]; set y [json::write object {*}[dict map {key val} $x {json::write string $val}]]; puts $y}] -column 0 -row 1 -sticky e
+
+
+proc placeForm {d} {
+	set i 1
+	dict for {k v} $d {
+		set ${k}_variable ""
+		if ![dict get $v Visible] {
+			continue
+		}
+		switch [dict get $v Type] {
+			boolean {
+				grid [ttk::label ".c.form.${k}_label" -text "$k"] -column 1 -row $i -sticky we
+				grid [ttk::checkbutton ".c.form.${k}_entry" -width 7 -textvariable "${k}_variable"] -column 2 -row $i -sticky we
+			}
+			default {
+				grid [ttk::label ".c.form.${k}_label" -text "$k"] -column 1 -row $i -sticky we
+				grid [ttk::entry ".c.form.${k}_entry" -width 7 -textvariable "${k}_variable"] -column 2 -row $i -sticky we
+			}
+		}
+		set i [expr $i +1]
+	}
+}
+
+proc dictFromFormKeys {keys} {
+	set d [dict create]
+	foreach key $keys {
+		dict set d $key [set ::${key}_variable]
+	}
+	return $d
+}
+
+placeForm $d
