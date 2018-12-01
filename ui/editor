@@ -45,11 +45,11 @@ proc placeForm {d} {
 		switch [dict get $v Type] {
 			boolean {
 				grid [ttk::label ".c.form.${k}_label" -text "$k"] -column 1 -row $i -sticky we
-				grid [ttk::checkbutton ".c.form.${k}_entry" -width 7 -textvariable "${k}_variable"] -column 2 -row $i -sticky we
+				grid [ttk::checkbutton ".c.form.${k}_entry" -width 7 -textvariable "${k}_variable"] -column 2 -row $i
 			}
 			default {
 				grid [ttk::label ".c.form.${k}_label" -text "$k"] -column 1 -row $i -sticky we
-				grid [ttk::entry ".c.form.${k}_entry" -width 7 -textvariable "${k}_variable"] -column 2 -row $i -sticky we
+				grid [ttk::entry ".c.form.${k}_entry" -width 7 -textvariable "${k}_variable"] -column 2 -row $i
 			}
 		}
 		set i [expr $i +1]
@@ -84,12 +84,13 @@ grid columnconfigure . 0 -weight 1; grid rowconfigure . 0 -weight 1
 
 grid [ttk::entry .c.type -textvariable type] -column 0 -row 0 -sticky we
 bind .c.type <Return> {placeForm [loadTypeInfo $::type]}
-grid [ttk::frame .c.form] -column 0 -row 1 -sticky nswe
+grid [ttk::frame .c.form] -column 0 -row 1 -sticky ns
 grid [ttk::button .c.send -text "Send" -command {sendDict [dictFromFormKeys [dict keys [loadTypeInfo $::type]]]}] -column 0 -row 2 -sticky se
 grid [tk::text .c.log -height 5] -column 0 -row 3 -sticky wse
 
 grid columnconfigure .c 0 -weight 1
 grid rowconfigure .c 1 -weight 1
+grid columnconfigure .c.form 0 -weight 1
 
 set d [loadTypeInfo $type]
 placeForm $d
