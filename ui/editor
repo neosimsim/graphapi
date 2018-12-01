@@ -10,10 +10,22 @@ package require Tk
 package require json
 package require json::write
 
-set input [open "|curl localhost:7070/typeinfo/order"]
-set text [read $input]
+set input [ open "|curl -s localhost:7070/typeinfo/order" ]
+set text [ read $input ]
 
-set d [json::json2dict $text]
+if {[ catch { close $input } errmsg ]} {
+	switch [lindex $errorCode 2] {
+		7 { puts "unable to connect to server" }
+		default { puts $errormsg }
+	}
+	exit 1
+}
+
+if {[ catch { set d [ json::json2dict $text ] } errmsg ]} {
+	puts "no valid json:"
+	puts $text
+	exit 1
+}
 
 wm title . "Formular"
 grid [ttk::frame .c -padding "3 3 12 12"] -column 0 -row 0 -sticky nwes
