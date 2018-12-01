@@ -10,36 +10,35 @@ package require Tk
 package require json
 package require json::write
 
-set input [ open "|curl -s localhost:7070/typeinfo/order" ]
-set text [ read $input ]
+set type foo
 
-if {[ catch { close $input } errmsg ]} {
-	switch [lindex $errorCode 2] {
-		7 { puts "unable to connect to server" }
-		default { puts $errormsg }
+proc log {msg} {
+	.c.log insert end "$msg\n"
+}
+
+proc loadTypeInfo {type} {
+	set input [ open "|curl -s localhost:7070/typeinfo/$type" ]
+	set text [ read $input ]
+	if {[ catch { close $input } errmsg ]} {
+		switch [lindex $::errorCode 2] {
+			7 {log "unable to connect to server"}
+			default { log $errormsg }
+		}
+		return [dict create]
 	}
-	exit 1
+	if {[ catch { set d [ json::json2dict $text ] } errmsg ]} {
+		log "server response is no valid json:\n$text"
+		return
+	}
+	log "received type information from server"
+	return $d
 }
-
-if {[ catch { set d [ json::json2dict $text ] } errmsg ]} {
-	puts "no valid json:"
-	puts $text
-	exit 1
-}
-
-wm title . "Formular"
-grid [ttk::frame .c -padding "3 3 12 12"] -column 0 -row 0 -sticky nwes
-grid columnconfigure . 0 -weight 1; grid rowconfigure . 0 -weight 1
-
-grid [ttk::frame .c.form] -column 0 -row 0 -sticky nswe
-
-grid [ttk::button .c.calc -text "Print" -command {set x [dictFromFormKeys [dict keys $d]]; set y [json::write object {*}[dict map {key val} $x {json::write string $val}]]; puts $y}] -column 0 -row 1 -sticky e
-
 
 proc placeForm {d} {
+	foreach w [winfo children .c.form] {destroy $w}
 	set i 1
 	dict for {k v} $d {
-		set ${k}_variable ""
+		set ::${k}_variable "x"
 		if ![dict get $v Visible] {
 			continue
 		}
@@ -65,4 +64,32 @@ proc dictFromFormKeys {keys} {
 	return $d
 }
 
+proc sendDict {x} {
+	set y [json::write object {*}[dict map {key val} $x {json::write string $val}]]; puts $y
+	set output [ open "|curl -s -X POST -T - localhost:7070/elements/" w ]
+	puts $output $y
+	if {[ catch { close $output } errmsg ]} {
+		switch [lindex $::errorCode 2] {
+			7 {log "unable to connect to server"}
+			default { log $errmsg }
+		}
+		return [dict create]
+	}
+	log "element send"
+}
+
+wm title . "veo"
+grid [ttk::frame .c -padding "3 3 12 12"] -column 0 -row 0 -sticky nwes
+grid columnconfigure . 0 -weight 1; grid rowconfigure . 0 -weight 1
+
+grid [ttk::entry .c.type -textvariable type] -column 0 -row 0 -sticky we
+bind .c.type <Return> {placeForm [loadTypeInfo $::type]}
+grid [ttk::frame .c.form] -column 0 -row 1 -sticky nswe
+grid [ttk::button .c.send -text "Send" -command {sendDict [dictFromFormKeys [dict keys [loadTypeInfo $::type]]]}] -column 0 -row 2 -sticky se
+grid [tk::text .c.log -height 5] -column 0 -row 3 -sticky wse
+
+grid columnconfigure .c 0 -weight 1
+grid rowconfigure .c 1 -weight 1
+
+set d [loadTypeInfo $type]
 placeForm $d
