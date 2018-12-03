@@ -1,0 +1,74 @@
+#!/bin/sh
+# Tcl ignores the next line -*- tcl -*- \
+exec wish "$0" -- "$@"
+
+# Copyright © 2018, Alexander Ben Nasrallah <me@abn.sh>
+# Use of this source code is governed by a BSD 3-clause
+# style license that can be found in the LICENSE file.
+
+package require Tk
+package require json
+package require json::write
+
+set elementId 963dd425-18f2-9b23-3974-63bfd88e8c05
+set linkType parentOf
+
+proc log {msg} {
+	.c.log insert end "$msg\n"
+}
+
+proc loadLinksFromElement {elementId linkType} {
+	set input [ open "|curl -s localhost:7070/links/" ]
+	set text [ read $input ]
+	if {[ catch { close $input } errmsg ]} {
+		switch [lindex $::errorCode 2] {
+			7 {log "unable to connect to server"}
+			default { log $errormsg }
+		}
+		return [dict create]
+	}
+	if {[ catch { set d [ json::json2dict $text ] } errmsg ]} {
+		log "server response is no valid json:\n$errmsg\n\n$text"
+		return [dict create]
+	}
+	log "received links from server"
+	return $d
+}
+
+proc sendLinks {sourceId targetIds linkType} {
+	foreach targetId $targetIds {
+		sendLink $sourceId $targetId $linkType
+	}	
+}
+
+proc sendLink {sourceId targetId linkType} {
+	set y [json::write object {*}[dict map {key val} [dict create source $sourceId target $targetId type $linkType] {json::write string $val}]]
+	set output [ open "|curl -s -X POST -T - localhost:7070/links/" w ]
+	puts $output $y
+	if {[ catch { close $output } errmsg ]} {
+		switch [lindex $::errorCode 2] {
+			7 {log "unable to connect to server"}
+			default { log $errmsg }
+		}
+		return [dict create]
+	}
+	log "link send"
+}
+
+wm title . "Links"
+grid [ttk::frame .c -padding "3 3 12 12"] -column 0 -row 0 -sticky nwes
+grid columnconfigure . 0 -weight 1; grid rowconfigure . 0 -weight 1
+
+grid [ttk::entry .c.elementId -textvariable elementId] -column 0 -row 0 -sticky we
+bind .c.elementId <Return> {placeForm [loadLinksFromElement $::elementId $::linkType]}
+grid [ttk::combobox .c.linkType -textvariable linkType] -column 0 -row 1 -sticky we
+grid [ttk::entry .c.targetIds -textvariable targetIds] -column 0 -row 2 -sticky we
+bind .c.targetIds <Return> {sendLinks $::elementId [list $::targetIds] $::linkType}
+.c.linkType configure -values [list parentOf]
+grid [tk::text .c.log -height 5] -column 0 -row 3 -sticky wsen
+
+grid columnconfigure .c 0 -weight 1
+grid rowconfigure .c 3 -weight 1
+
+set d [loadLinksFromElement $elementId $linkType]
+log $d
