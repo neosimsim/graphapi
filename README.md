@@ -69,3 +69,10 @@ The client is used by GUIs, like tcl/tk.
 
 # Open Tasks
 - Access restriction
+
+## Tree View
+Der Tree View zeigt eine Menge von Teil Graphen an. Die Graphen werden bestimmt durch eine Menge Wurzeln und eines Typs von
+Verknupfungen, z.B. `isParentOf`.
+
+Bei Zykeln wird die Traversierung abgebrochen.
+
