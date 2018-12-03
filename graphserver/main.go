@@ -12,30 +12,27 @@ import (
 	graphjson "github.com/neosimsim/graphapi/json"
 )
 
-var repo *FileRepo
-
 func main() {
 	httpListen := flag.String("http", ":8080", "address for incoming connections")
 	dir := flag.String("dir", ".", "directory to store to and read from")
 	flag.Parse()
 
-	repo = NewFileRepo(path.Join(*dir, "elements"))
-	http.HandleFunc("/elements/", ServeFileFactory(repo))
+	elementRepo := NewFileRepo(path.Join(*dir, "elements"))
+	http.HandleFunc("/elements/", ServeFileFactory("/elements/", elementRepo))
 	linkRepo := NewFileRepo(path.Join(*dir, "links"))
-	http.HandleFunc("/links/", ServeFileFactory(linkRepo))
+	http.HandleFunc("/links/", ServeFileFactory("/links/", linkRepo))
 	http.HandleFunc("/typeinfo/", TypeInfoFactory(*dir))
 	http.Handle("/assets/", http.StripPrefix("/assets", NewCorsHandler(http.FileServer(http.Dir("assets")))))
 
 	log.Fatal(http.ListenAndServe(*httpListen, nil))
 }
 
-func ServeFileFactory(repo Repo) http.HandlerFunc {
+func ServeFileFactory(urlPath string, repo Repo) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
 		case "GET":
 			log.Print("GET")
-			id := path.Base(req.URL.Path)
-			if id == "elements" {
+			if req.URL.Path == urlPath {
 				ReadElements(repo, w, req)
 			} else {
 				ReadElement(repo, w, req)

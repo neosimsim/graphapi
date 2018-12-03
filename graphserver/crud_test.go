@@ -14,7 +14,7 @@ func TestCreate(t *testing.T) {
 	message := `{ "title": "I'm new" }`
 	req := httptest.NewRequest("POST", "http://localhost/elements", strings.NewReader(message))
 	w := httptest.NewRecorder()
-	ServeFileFactory(&cache)(w, req)
+	ServeFileFactory("/elements/", &cache)(w, req)
 
 	resp := w.Result()
 
@@ -49,9 +49,9 @@ func TestCreate(t *testing.T) {
 func TestRead(t *testing.T) {
 	cache := Cache{"deadbeef": []byte(`{"uuid": "deadbeef", "title": "Get me"}`)}
 
-	req := httptest.NewRequest("GET", "http://localhost/elements?uuid=deadbeef", nil)
+	req := httptest.NewRequest("GET", "http://localhost/elements/?uuid=deadbeef", nil)
 	w := httptest.NewRecorder()
-	ServeFileFactory(&cache)(w, req)
+	ServeFileFactory("/elements/", &cache)(w, req)
 
 	resp := w.Result()
 
@@ -84,7 +84,7 @@ func TestUpdate(t *testing.T) {
 	message := `{"uuid": "abad1dea", "title": "Updated"}`
 	req := httptest.NewRequest("PUT", "http://localhost/elements/deadbeef", strings.NewReader(message))
 	w := httptest.NewRecorder()
-	ServeFileFactory(&cache)(w, req)
+	ServeFileFactory("/elements/", &cache)(w, req)
 
 	resp := w.Result()
 
@@ -115,7 +115,7 @@ func TestDelete(t *testing.T) {
 	req := httptest.NewRequest("DELETE", "http://localhost/elements/deadbeef", strings.NewReader("{}"))
 	w := httptest.NewRecorder()
 
-	ServeFileFactory(&cache)(w, req)
+	ServeFileFactory("/elements/", &cache)(w, req)
 	resp := w.Result()
 
 	if _, exists := cache["deadbeef"]; exists {
