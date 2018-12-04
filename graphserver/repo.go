@@ -15,8 +15,8 @@ type Query struct {
 } // Should be a map[string]string in the future to and/or queries
 
 // Repo is an interface that specifies methods to obtain io.ReadCloser
-// and io.WriteCloser for elements and delete elements. Elemnts might be files
-// or cache entries, by some identifiyed, e.g. UUID.
+// and io.WriteCloser for elements and delete elements. Elements might be files
+// or cache entries, by some identified, e.g. UUID.
 type Repo interface {
 	Writer(string) (io.WriteCloser, error)
 	Reader(string) (io.ReadCloser, error)
