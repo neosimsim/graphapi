@@ -1,0 +1,8 @@
+graphsearch
+
+Usage: graphsearch -r REPO_DIR
+  graph search deamon
+
+Available options:
+  -r REPO_DIR              the JSON graph repository
+  -h,--help                Show this help text

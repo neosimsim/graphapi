@@ -65,7 +65,7 @@ proc dictFromFormKeys {keys} {
 }
 
 proc sendDict {x} {
-	set y [json::write object {*}[dict map {key val} $x {json::write string $val}]]; puts $y
+	set y [json::write object {*}[dict map {key val} $x {json::write string $val}]]
 	set output [ open "|curl -s -X POST -T - localhost:7070/elements/" w ]
 	puts $output $y
 	if {[ catch { close $output } errmsg ]} {

@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+repo=`mktemp -d /tmp/graphsearch-regression-XXXXXX`
+trap "rm -f $repo" 2 3 6 9
+
+rmdir $repo
+graphsearch -r $repo &
+pid=$!
+
+sleep 1
+
+[ -d "$repo" ] || (echo "no repo dir created" >&2; exit 1)
+[ -d "$repo/elements" ] || (echo "no elements dir created" >&2; exit 1)
+[ -d "$repo/links" ] || (echo "no links dir created" >&2; exit 1)
+[ -d "$repo/queries" ] || (echo "no queries dir created" >&2; exit 1)
+
+rm -rf $repo
+kill $pid
+

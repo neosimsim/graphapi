@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"path"
 
+	"github.com/fsnotify/fsnotify"
 	graphjson "github.com/neosimsim/graphapi/json"
 )
 
@@ -22,6 +24,7 @@ func main() {
 	linkRepo := NewFileRepo(path.Join(*dir, "links"))
 	http.HandleFunc("/links/", ServeFileFactory("/links/", linkRepo))
 	http.HandleFunc("/typeinfo/", TypeInfoFactory(*dir))
+	http.HandleFunc("/tree/", TreeSearchFactory(*dir, "/tree/"))
 	http.Handle("/assets/", http.StripPrefix("/assets", NewCorsHandler(http.FileServer(http.Dir("assets")))))
 
 	log.Fatal(http.ListenAndServe(*httpListen, nil))
@@ -30,21 +33,21 @@ func main() {
 func ServeFileFactory(urlPath string, repo Repo) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
-		case "GET":
-			log.Print("GET")
+		case http.MethodGet:
+			log.Print(req.Method)
 			if req.URL.Path == urlPath {
 				ReadElements(repo, w, req)
 			} else {
 				ReadElement(repo, w, req)
 			}
-		case "POST":
-			log.Print("POST")
+		case http.MethodPost:
+			log.Print(req.Method)
 			CreateElements(repo, w, req)
-		case "PUT":
-			log.Print("PUT")
+		case http.MethodPut:
+			log.Print(req.Method)
 			UpdateElements(repo, w, req)
-		case "DELETE":
-			log.Print("DELETE")
+		case http.MethodDelete:
+			log.Print(req.Method)
 			DeleteElements(repo, w, req)
 		}
 	}
@@ -52,6 +55,10 @@ func ServeFileFactory(urlPath string, repo Repo) http.HandlerFunc {
 
 func TypeInfoFactory(basedir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
 		typeName := path.Base(req.URL.Path)
 		if typeName == "typeinfo" {
 			w.WriteHeader(http.StatusBadRequest)
@@ -69,6 +76,71 @@ func TypeInfoFactory(basedir string) http.HandlerFunc {
 					w.WriteHeader(http.StatusInternalServerError)
 					w.Write([]byte(err.Error()))
 				}
+			}
+		}
+	}
+}
+
+func TreeSearchFactory(basedir, urlPath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		searchDirPath := path.Join(basedir, "queries", genUUID())
+		os.MkdirAll(searchDirPath, os.ModeDir|os.ModePerm)
+		queryPath := path.Join(searchDirPath, "query")
+		if queryFile, err := os.Create(queryPath); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		} else {
+			watcher, err := fsnotify.NewWatcher()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+			defer watcher.Close()
+
+			result := make(chan string)
+			go func() {
+				for {
+					select {
+					case event, ok := <-watcher.Events:
+						log.Println("fs event:", event)
+						if !ok {
+							return
+						}
+						if event.Op == fsnotify.Write && path.Base(event.Name) == "result" {
+							result <- event.Name
+						}
+					case err, ok := <-watcher.Errors:
+						if !ok {
+							return
+						}
+						log.Println("error:", err)
+					}
+				}
+			}()
+
+			err = watcher.Add(searchDirPath)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+
+			io.Copy(queryFile, req.Body)
+			if resultFile, err := os.Open(<-result); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+			} else {
+				defer func() {
+					resultFile.Close()
+				}()
+				w.WriteHeader(http.StatusOK)
+				io.Copy(w, resultFile)
 			}
 		}
 	}

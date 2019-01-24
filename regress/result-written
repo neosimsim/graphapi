@@ -1,0 +1,30 @@
+#!/bin/sh -e
+
+repo=`mktemp -d /tmp/graphsearch-regression-XXXXXX`
+trap "rm -f $repo" 2 3 6 9
+
+graphsearch -r $repo &
+pid=$!
+trap "kill $pid" 2 3 6 9
+
+sleep 1
+
+cd $repo
+
+mkdir -p queries/1
+echo all >queries/1/query
+
+for i in 1 2 3
+do
+	if [ -f $repo/queries/1/result ]
+	then
+		result_written=1
+		break
+	fi
+	sleep 1
+done
+
+kill $pid
+rm -rf $repo
+[ -n "$result_written" ] || (echo "no result written" >&2; exit 1)
+
