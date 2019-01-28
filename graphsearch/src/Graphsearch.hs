@@ -31,9 +31,14 @@ data Result = Result
 
 writeResult :: Result -> IO ()
 writeResult r = do
-  resultHandle <- openFile (joinPath [resultId r, "result"]) WriteMode
-  hPrint resultHandle (result r)
-  hClose resultHandle
+  exists <- doesFileExist filePath
+  unless exists $ do
+    resultHandle <- openFile filePath WriteMode
+    hPrint resultHandle (result r)
+    hClose resultHandle
+    putStrLn "result written"
+  where
+    filePath = joinPath [resultId r, "result"]
 
 data Query = Query
   { queryId :: String
@@ -110,6 +115,7 @@ queriesFromDir :: WatchManager -> FilePath -> IO (Chan IO Query)
 queriesFromDir mgr path = do
   createDirectoryIfMissing True searchDir
   queries <- newChan
+  pid <- getProcessID
   _ <-
     watchDir mgr searchDir isAddedEvent $ \e -> do
       lockFileExists <-
@@ -117,7 +123,7 @@ queriesFromDir mgr path = do
       unless lockFileExists $ do
         resultHandle <-
           openFile (joinPath [searchDir, eventPath e, "lock"]) WriteMode
-        getProcessID >>= hPrint resultHandle
+        hPrint resultHandle pid
         hClose resultHandle
         let queryFile = joinPath [searchDir, eventPath e, "query"]
         waitForFile mgr queryFile
