@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	graphjson "github.com/neosimsim/graphapi/json"
@@ -113,7 +114,10 @@ func TreeSearchFactory(basedir, urlPath string) http.HandlerFunc {
 							return
 						}
 						if event.Op == fsnotify.Write && path.Base(event.Name) == "result" {
+							log.Println("found result")
+							time.Sleep(1 * time.Millisecond) // ugly workaround: Some times the file is still empy a few moments after the event has been sent.
 							result <- event.Name
+							return
 						}
 					case err, ok := <-watcher.Errors:
 						if !ok {
@@ -126,19 +130,23 @@ func TreeSearchFactory(basedir, urlPath string) http.HandlerFunc {
 
 			err = watcher.Add(searchDirPath)
 			if err != nil {
+				log.Print(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
 				return
 			}
 
 			io.Copy(queryFile, req.Body)
-			if resultFile, err := os.Open(<-result); err != nil {
+			resultPath := <-result
+			if resultFile, err := os.Open(resultPath); err != nil {
+				log.Print(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
 			} else {
 				defer func() {
 					resultFile.Close()
 				}()
+				log.Printf("reading result from %s", resultPath)
 				w.WriteHeader(http.StatusOK)
 				io.Copy(w, resultFile)
 			}
