@@ -1,3 +1,7 @@
+This is a [Proof of Concept](POC.md).
+
+# GraphAPI
+
 -	send
 -	receive
 -	edit
