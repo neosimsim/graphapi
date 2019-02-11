@@ -96,17 +96,21 @@ executes the query and write the result to *result*.
 An example of *graphapi* directory may look like this
 
 	graphapi
-	├── elements
-	│   └── b03475a9-fd66-45b4-9fb8-1db02bd66b44
-	├── links
-	│   └── e24a97db-bdcc-4cb0-a713-ac42804852dc
-	├── queries
-	│   └── cb86ab3c-19b5-4c2b-ae58-5ea4603b9972
-	│       ├── pid
-	│       ├── query
-	│       └── result
-	└── schemas
-		└── order
+	|-- elements
+	|   |-- 3cd1aad8-9bbd-f873-8eae-5216394c665b
+	|   `-- 69776259-73eb-e7bb-dc0e-6cd5ff0005bf
+	|-- links
+	|   |-- 03582c34-8203-e5a2-93e1-c7ebec529fd1
+	|   `-- f4485b1b-c029-8d51-5cb9-fa0facaabc7c
+	|-- queries
+	|   `-- 2
+	|       |-- query
+	|       |-- lock
+	|       `-- result
+	`-- schemas
+		|-- foo
+		`-- order
+
 
 
 ## Client

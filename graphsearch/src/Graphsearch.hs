@@ -33,9 +33,7 @@ writeResult :: Result -> IO ()
 writeResult r = do
   exists <- doesFileExist filePath
   unless exists $ do
-    resultHandle <- openFile filePath WriteMode
-    hPrint resultHandle (result r)
-    hClose resultHandle
+    writeFile filePath $ result r
     putStrLn "result written"
   where
     filePath = joinPath [resultId r, "result"]
@@ -76,6 +74,10 @@ data GraphPatch
 
 newtype Patch a =
   Created a
+
+isModifiedEvent :: Event -> Bool
+isModifiedEvent Modified {} = True
+isModifiedEvent _        = False
 
 isAddedEvent :: Event -> Bool
 isAddedEvent Added {} = True
@@ -127,9 +129,9 @@ queriesFromDir mgr path = do
         hClose resultHandle
         let queryFile = joinPath [searchDir, eventPath e, "query"]
         waitForFile mgr queryFile
-        handle <- openFile queryFile ReadMode
-        IOStrict.hGetContents handle >>= writeChan queries . Query (eventPath e)
-        hClose handle
+        queryString <- getContent queryFile
+        putStrLn $ "got query " ++ queryString
+        writeChan queries . Query (eventPath e) $ queryString
   return queries
   where
     searchDir = joinPath [path, "queries"]
@@ -143,15 +145,19 @@ patchesFromDir mgr path = do
     watchDir
       mgr
       elementsPath
-      isAddedEvent
-      (writeChan patches . NodePatch . Created . takeBaseName . eventPath)
+      isModifiedEvent $ \e -> do
+        element <- getContent $ eventPath e
+        putStrLn $ "read element " ++ element
+        writeChan patches (NodePatch $ Created element)
   createDirectoryIfMissing True linksPath
   _ <-
     watchDir
       mgr
       linksPath
-      isAddedEvent
-      (writeChan patches . EdgePatch . Created . takeBaseName . eventPath)
+      isModifiedEvent $ \e -> do
+        link <- getContent $ eventPath e
+        putStrLn $ "read link " ++ link
+        writeChan patches . EdgePatch $ Created link
   return patches
   where
     elementsPath = joinPath [path, "elements"]
