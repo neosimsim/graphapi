@@ -1,0 +1,21 @@
+- testing, in particular concurrency
+- haddock, including checker for existing documentation
+- lock query folder if read
+- init graph on startup
+
+different approaches
+
+1.	generalize file watcher (FSNotify)
+
+2.	replace the IORef graph by a Monad GraphRepo, compare to State monad of
+	LYAH
+3.	Change the lock file by a "in progress" file.
+
+	The server then reads the result file and response after the "in progress"
+	file has been deleted. Using thin approach the result file can be written
+	in chunks.
+
+	Also we can use a lock and done file.
+4.	Only write query if not allready present.
+
+	By this it aktually doesn't matter if two instances process the same query.
